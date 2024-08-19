@@ -66,14 +66,6 @@ impl Adsr {
         self.triggered = false;
     }
 
-    pub fn sustaining(&self) -> bool {
-        self.state == AdsrState::Sustain
-    }
-
-    pub fn ready(&self) -> bool {
-        self.state == AdsrState::Done
-    }
-
     pub fn update(&mut self, dt_us: u32) -> u16 {
         self.time_us += dt_us;
         let time_ms = self.time_us / 1000;

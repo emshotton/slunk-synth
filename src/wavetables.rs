@@ -1,5 +1,3 @@
-use defmt::info;
-
 pub const WAVETABLE_SIZE: usize = 128;
 pub static SINE_WAVETABLE: [u8; WAVETABLE_SIZE] = [
     127, 133, 139, 146, 152, 158, 164, 170, 176, 182, 187, 193, 198, 203, 208, 213, 217, 221, 226,
@@ -52,8 +50,6 @@ pub struct WavetablePlayer {
     sample_interval_ns: u32,
     note_counter_ns: u32,
     wavetable_index: u32,
-    overtone_1: u8,
-    overtone_2: u8,
     portamento: bool,
     portamento_time_ms: u32,
     portamento_target_sample_interval_ns: u32,
@@ -70,8 +66,6 @@ impl WavetablePlayer {
             sample_interval_ns,
             note_counter_ns: 0,
             wavetable_index: 0,
-            overtone_1: 1,
-            overtone_2: 1,
             portamento: true,
             portamento_time_ms: 150,
             portamento_target_sample_interval_ns: sample_interval_ns,

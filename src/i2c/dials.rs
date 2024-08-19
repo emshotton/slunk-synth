@@ -1,6 +1,5 @@
 use crate::i2c::refcelldevice::RefCellDevice;
 use core::cell::RefCell;
-use defmt::*;
 
 pub enum Channel {
     A0,

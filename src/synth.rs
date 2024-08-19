@@ -1,10 +1,5 @@
 use crate::adsr::Adsr;
-use crate::wavetables::{
-    WavetablePlayer, SAWTOOTH_WAVETABLE, SINE_WAVETABLE, SQUARE_WAVETABLE, TRIANGLE_WAVETABLE,
-    WAVETABLE_SIZE,
-};
-
-use defmt::info;
+use crate::wavetables::{WavetablePlayer, SINE_WAVETABLE, WAVETABLE_SIZE};
 
 pub trait Synth {
     fn new() -> Self;
@@ -90,10 +85,6 @@ impl Synth for PolySynth {
             MonoSynth::new(),
             MonoSynth::new(),
         ];
-        // voices[0].set_wavetable(&SAWTOOTH_WAVETABLE);
-        // voices[1].set_wavetable(&SINE_WAVETABLE);
-        // voices[2].set_wavetable(&SQUARE_WAVETABLE);
-        // voices[3].set_wavetable(&TRIANGLE_WAVETABLE);
         Self {
             voices,
             active_voices: [false, false, false, false, false],
@@ -102,15 +93,9 @@ impl Synth for PolySynth {
 
     fn update(&mut self, elapsed_time_us: u32) -> u8 {
         let mut sample = 0;
-        for (voice, active) in self.voices.iter_mut().zip(self.active_voices.iter()) {
-            // if *active {
+        for voice in self.voices.iter_mut() {
             sample += voice.update(elapsed_time_us) as u32;
-            // }
         }
-        // let active_voices = self.active_voices.iter().filter(|x| **x).count();
-        // if active_voices > 0 {
-        //     sample /= active_voices as u32;
-        // }
         sample as u8
     }
 
