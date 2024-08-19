@@ -50,7 +50,6 @@ pub struct WavetablePlayer {
     sample_interval_ns: u32,
     note_counter_ns: u32,
     wavetable_index: u32,
-    portamento: bool,
     portamento_time_ms: u32,
     portamento_target_sample_interval_ns: u32,
     portamento_prev_sample_interval_ns: u32,
@@ -66,7 +65,6 @@ impl WavetablePlayer {
             sample_interval_ns,
             note_counter_ns: 0,
             wavetable_index: 0,
-            portamento: true,
             portamento_time_ms: 150,
             portamento_target_sample_interval_ns: sample_interval_ns,
             portamento_prev_sample_interval_ns: sample_interval_ns,
@@ -79,23 +77,14 @@ impl WavetablePlayer {
     }
 
     pub fn set_portamento(&mut self, glide_time_ms: u32) {
-        self.portamento = true;
         self.portamento_time_ms = glide_time_ms;
     }
 
-    pub fn disable_portamento(&mut self) {
-        self.portamento = false;
-    }
-
     pub fn set_midi_note(&mut self, midi_note: u8) {
-        if !self.portamento {
-            self.sample_interval_ns = MIDI_NOTE_TO_SAMPLE_INTERVAL_NS[midi_note as usize];
-        } else {
-            self.portamento_target_sample_interval_ns =
-                MIDI_NOTE_TO_SAMPLE_INTERVAL_NS[midi_note as usize];
-            self.portamento_prev_sample_interval_ns = self.sample_interval_ns;
-            self.protamento_counter_ns = 0;
-        }
+        self.portamento_target_sample_interval_ns =
+            MIDI_NOTE_TO_SAMPLE_INTERVAL_NS[midi_note as usize];
+        self.portamento_prev_sample_interval_ns = self.sample_interval_ns;
+        self.protamento_counter_ns = 0;
 
         self.note = midi_note;
     }
@@ -105,8 +94,7 @@ impl WavetablePlayer {
     }
 
     pub fn next_sample(&mut self, elapsed_time_us: u32) -> u8 {
-        if self.portamento & !(self.sample_interval_ns == self.portamento_target_sample_interval_ns)
-        {
+        if !(self.sample_interval_ns == self.portamento_target_sample_interval_ns) {
             self.protamento_counter_ns += elapsed_time_us * 1_000;
 
             let progress_scaled_1000 = (self.protamento_counter_ns
@@ -142,25 +130,6 @@ impl WavetablePlayer {
         }
 
         let sample = self.wavetable[self.wavetable_index as usize];
-
-        // let overtone_index = self.wavetable_index % self.overtone_1 as u32;
-
-        // let mut overtone_index_1 = self.wavetable_index as u32 * self.overtone_1 as u32;
-        // if overtone_index_1 >= self.wavetable.len() as u32 {
-        //     overtone_index_1 = overtone_index_1 % self.wavetable.len() as u32;
-        // }
-        // let overtone_sample_1 = self.wavetable[overtone_index_1 as usize] as u32;
-
-        // let mut overtone_index_2 = self.wavetable_index as u32 * self.overtone_2 as u32;
-        // if overtone_index_2 >= self.wavetable.len() as u32 {
-        //     overtone_index_2 = overtone_index_2 % self.wavetable.len() as u32;
-        // }
-        // let overtone_sample_2 = self.wavetable[overtone_index_2 as usize] as u32;
-
-        // let sample = (self.wavetable[self.wavetable_index as usize] as u32 * 3
-        //     + overtone_sample_1 * 2
-        //     + overtone_sample_2)
-        //     / 6;
 
         sample as u8
     }

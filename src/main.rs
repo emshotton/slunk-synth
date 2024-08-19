@@ -12,18 +12,17 @@ mod synth;
 mod wavetables;
 
 use crate::i2c::dials::Dials;
-use crate::i2c::refcelldevice::RefCellDevice;
+// use crate::i2c::refcelldevice::RefCellDevice;
 use crate::metrics::{MetricName, Metrics};
 use ads1x1x;
 use bsp::entry;
 use core::cell::RefCell;
 use defmt::*;
 use defmt_rtt as _;
-use embedded_hal::i2c::I2c;
 use embedded_hal::pwm::SetDutyCycle;
 use intercore::IntercoreMessage;
 use panic_probe as _;
-use rp_pico::hal::{Adc, Clock};
+use rp_pico::hal::Clock;
 use usb_device::class_prelude::UsbBusAllocator;
 use usb_device::prelude::{StringDescriptors, UsbDeviceBuilder, UsbVidPid};
 use usbd_midi::data::midi::channel::Channel::Channel1;
@@ -227,7 +226,7 @@ fn main() -> ! {
 
     // Share the i2c bus between the two PCA9685 devices
     let i2c_ref_cell = RefCell::new(i2c);
-    let mut i2c_device_1 = RefCellDevice::new(&i2c_ref_cell);
+    // let mut i2c_device_1 = RefCellDevice::new(&i2c_ref_cell);
     // Create a MIDI class with 1 input and 0 output jacks.
     let mut midi = MidiClass::new(&usb_bus, 1, 1).unwrap();
 
