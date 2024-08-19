@@ -98,7 +98,7 @@ impl WavetablePlayer {
             self.protamento_counter_ns += elapsed_time_us * 1_000;
 
             let progress_scaled_1000 = (self.protamento_counter_ns
-                / (u32::max(self.portamento_time_ms, 1) * 1_000))
+                / (u32::max(self.portamento_time_ms * 1_000, 1)))
                 as i32;
 
             let diff: i32 = self.portamento_target_sample_interval_ns as i32
