@@ -242,34 +242,35 @@ fn main() -> ! {
 
     info!("Entering main loop");
 
-    let mut dials = Dials::new(&i2c_ref_cell, ads1x1x::SlaveAddr::default());
+    let mut adsr_dials = Dials::new(&i2c_ref_cell, ads1x1x::SlaveAddr::default());
+    let mut dials = Dials::new(&i2c_ref_cell, ads1x1x::SlaveAddr::Sda);
     let mut previous_time_us = loop_timer.get_counter_low();
     loop {
         let current_time_us = loop_timer.get_counter_low();
         let elapsed_time_us = current_time_us.wrapping_sub(previous_time_us);
         previous_time_us = current_time_us;
 
-        dials.update(elapsed_time_us).and_then(|dial_change| {
+        adsr_dials.update(elapsed_time_us).and_then(|dial_change| {
             match dial_change.channel {
-                i2c::dials::Channel::A3 => {
+                i2c::dials::Channel::A0 => {
                     let msg = IntercoreMessage::AttackControl {
                         attack_ms: dial_change.value as u16 >> 5,
                     };
                     sio.fifo.write(msg.to_u32());
                 }
-                i2c::dials::Channel::A2 => {
+                i2c::dials::Channel::A1 => {
                     let msg = IntercoreMessage::DecayControl {
                         decay_ms: dial_change.value as u16 >> 5,
                     };
                     sio.fifo.write(msg.to_u32());
                 }
-                i2c::dials::Channel::A1 => {
+                i2c::dials::Channel::A2 => {
                     let msg = IntercoreMessage::SustainControl {
                         sustain_level: dial_change.value as u16 >> 3,
                     };
                     sio.fifo.write(msg.to_u32());
                 }
-                i2c::dials::Channel::A0 => {
+                i2c::dials::Channel::A3 => {
                     let msg = IntercoreMessage::ReleaseControl {
                         release_ms: dial_change.value as u16 >> 5,
                     };
