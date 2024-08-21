@@ -5,6 +5,7 @@
 #![no_main]
 
 mod adsr;
+mod errors;
 mod i2c;
 mod intercore;
 mod metrics;
@@ -226,7 +227,8 @@ fn main() -> ! {
 
     // Share the i2c bus between the two PCA9685 devices
     let i2c_ref_cell = RefCell::new(i2c);
-    let mut i2c_device_adsr = RefCellDevice::new(&i2c_ref_cell);
+    let i2c_device_adsr = RefCellDevice::new(&i2c_ref_cell);
+    let i2c_device_portamento = RefCellDevice::new(&i2c_ref_cell);
     // Create a MIDI class with 1 input and 0 output jacks.
     let mut midi = MidiClass::new(&usb_bus, 1, 1).unwrap();
 
@@ -242,8 +244,8 @@ fn main() -> ! {
 
     info!("Entering main loop");
 
-    let mut adsr_dials = Dials::new(&i2c_device_adsr, ads1x1x::SlaveAddr::default());
-    let mut dials = Dials::new(&i2c_ref_cell, ads1x1x::SlaveAddr::Sda);
+    let mut adsr_dials = Dials::new(i2c_device_adsr, ads1x1x::SlaveAddr::default());
+    let mut portamento_dials = Dials::new(i2c_device_portamento, ads1x1x::SlaveAddr::Sda);
     let mut previous_time_us = loop_timer.get_counter_low();
     loop {
         let current_time_us = loop_timer.get_counter_low();

@@ -1,3 +1,4 @@
+use crate::errors::Error;
 use crate::i2c::refcelldevice::RefCellDevice;
 use core::cell::RefCell;
 
@@ -35,6 +36,7 @@ where
     pub fn new(i2c_device: I2C, address: ads1x1x::SlaveAddr) -> Self {
         let mut adc = ads1x1x::Ads1x1x::new_ads1115(i2c_device, address);
         adc.set_full_scale_range(ads1x1x::FullScaleRange::Within4_096V)
+            .map_err(|_| crate::errors::Error::InitializeError)
             .unwrap();
         Dials {
             pot_0: 0,
