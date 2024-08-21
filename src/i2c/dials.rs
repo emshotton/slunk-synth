@@ -13,13 +13,13 @@ pub struct DialChange {
     pub value: u16,
 }
 
-pub struct Dials<'a, I2C: 'a> {
+pub struct Dials<I2C> {
     pub pot_0: u16,
     pub pot_1: u16,
     pub pot_2: u16,
     pub pot_3: u16,
     ads1115: ads1x1x::Ads1x1x<
-        RefCellDevice<'a, I2C>,
+        I2C,
         ads1x1x::ic::Ads1115,
         ads1x1x::ic::Resolution16Bit,
         ads1x1x::mode::OneShot,
@@ -28,12 +28,11 @@ pub struct Dials<'a, I2C: 'a> {
     timer_us: u32,
 }
 
-impl<'a, I2C> Dials<'a, I2C>
+impl<I2C, E> Dials<I2C>
 where
-    I2C: embedded_hal::i2c::I2c,
+    I2C: embedded_hal::i2c::I2c<Error = E>,
 {
-    pub fn new(i2c_ref_cell: &'a RefCell<I2C>, address: ads1x1x::SlaveAddr) -> Self {
-        let i2c_device = RefCellDevice::new(i2c_ref_cell);
+    pub fn new(i2c_device: I2C, address: ads1x1x::SlaveAddr) -> Self {
         let mut adc = ads1x1x::Ads1x1x::new_ads1115(i2c_device, address);
         adc.set_full_scale_range(ads1x1x::FullScaleRange::Within4_096V)
             .unwrap();
