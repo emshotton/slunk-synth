@@ -82,7 +82,7 @@ impl Adsr {
                     return MAX_LEVEL as u16;
                 }
                 let level = (((MAX_LEVEL * time_ms / u32::max(self.attack_ms, 1)) * self.velocity)
-                    / 255) as u16;
+                    / 127) as u16;
                 return level;
             }
             AdsrState::Decay => {
@@ -96,7 +96,7 @@ impl Adsr {
                         * (MAX_LEVEL - u32::min(self.sustain_level, MAX_LEVEL))
                         / u32::max(self.decay_ms, 1))
                     * self.velocity)
-                    / 255) as u16;
+                    / 127) as u16;
             }
             AdsrState::Sustain => {
                 // check to see if the note has been released
@@ -104,7 +104,7 @@ impl Adsr {
                     self.state = AdsrState::Release;
                     self.time_us = 0;
                 }
-                return ((self.sustain_level * self.velocity) / 255) as u16;
+                return ((self.sustain_level * self.velocity) / 127) as u16;
             }
             AdsrState::Release => {
                 if time_ms > self.release_ms {
@@ -114,7 +114,7 @@ impl Adsr {
                 }
 
                 let sustain_diff = time_ms * self.sustain_level / u32::max(self.release_ms, 1);
-                let value = ((self.sustain_level - sustain_diff) * self.velocity) / 255;
+                let value = ((self.sustain_level - sustain_diff) * self.velocity) / 127;
                 return value as u16;
             }
         }

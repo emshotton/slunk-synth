@@ -12,16 +12,15 @@ mod metrics;
 mod synth;
 mod wavetables;
 
-use crate::i2c::dials::Dials;
 use crate::i2c::refcelldevice::RefCellDevice;
 use crate::metrics::{MetricName, Metrics};
-use ads1x1x;
 use bsp::entry;
 use core::cell::RefCell;
 use defmt::*;
 use defmt_rtt as _;
 use embedded_hal::pwm::SetDutyCycle;
 use intercore::IntercoreMessage;
+use knobz::Knobz;
 use panic_probe as _;
 use rp_pico::hal::Clock;
 use usb_device::class_prelude::UsbBusAllocator;
@@ -124,10 +123,7 @@ fn core1_task(loop_timer: &bsp::hal::timer::Timer) -> ! {
                 }
                 Some(IntercoreMessage::SustainControl { sustain_level }) => {
                     info!("SustainControl: sustain_level: {}", sustain_level);
-                    poly_synth.sustain_control(core::cmp::min(
-                        sustain_level as u16,
-                        adsr::MAX_LEVEL as u16,
-                    ));
+                    poly_synth.sustain_control(sustain_level as u16);
                 }
                 Some(IntercoreMessage::ReleaseControl { release_ms }) => {
                     info!("ReleaseControl: release_ms: {}", release_ms);
@@ -229,6 +225,7 @@ fn main() -> ! {
     let i2c_ref_cell = RefCell::new(i2c);
     let i2c_device_adsr = RefCellDevice::new(&i2c_ref_cell);
     let i2c_device_portamento = RefCellDevice::new(&i2c_ref_cell);
+    let i2c_device_misc = RefCellDevice::new(&i2c_ref_cell);
     // Create a MIDI class with 1 input and 0 output jacks.
     let mut midi = MidiClass::new(&usb_bus, 1, 1).unwrap();
 
@@ -244,8 +241,18 @@ fn main() -> ! {
 
     info!("Entering main loop");
 
-    let mut adsr_dials = Dials::new(i2c_device_adsr, ads1x1x::SlaveAddr::default());
-    let mut portamento_dials = Dials::new(i2c_device_portamento, ads1x1x::SlaveAddr::Sda);
+    let mut adsr_dials = Knobz::new(i2c_device_adsr, knobz::Address::X48).unwrap();
+    adsr_dials.set_channel_range(knobz::Channel::A0, knobz::Range::Within255); // Attack
+    adsr_dials.set_channel_range(knobz::Channel::A1, knobz::Range::Within255); // Decay
+    adsr_dials.set_channel_range(knobz::Channel::A2, knobz::Range::Within1023); // Sustain
+    adsr_dials.set_channel_range(knobz::Channel::A3, knobz::Range::Within255); // Release
+
+    let mut portamento_dials = Knobz::new(i2c_device_portamento, knobz::Address::X4B).unwrap();
+    portamento_dials.set_channel_range(knobz::Channel::A3, knobz::Range::Within1023); // Portamento ms
+    portamento_dials.set_channel_range(knobz::Channel::A2, knobz::Range::Within255); // Waveform Select
+
+    // let mut misc_dials = Knobz::new(i2c_device_misc, knobz::Address::X4B).unwrap();
+
     let mut previous_time_us = loop_timer.get_counter_low();
     loop {
         let current_time_us = loop_timer.get_counter_low();
@@ -254,33 +261,58 @@ fn main() -> ! {
 
         adsr_dials.update(elapsed_time_us).and_then(|dial_change| {
             match dial_change.channel {
-                i2c::dials::Channel::A0 => {
+                knobz::Channel::A0 => {
+                    info!("DIAL CHANGE: {}", adsr_dials.channel_0);
+
                     let msg = IntercoreMessage::AttackControl {
-                        attack_ms: dial_change.value as u16 >> 5,
+                        attack_ms: dial_change.value,
                     };
-                    sio.fifo.write(msg.to_u32());
+                    sio.fifo.write_blocking(msg.to_u32());
                 }
-                i2c::dials::Channel::A1 => {
+                knobz::Channel::A1 => {
                     let msg = IntercoreMessage::DecayControl {
-                        decay_ms: dial_change.value as u16 >> 5,
+                        decay_ms: dial_change.value,
                     };
-                    sio.fifo.write(msg.to_u32());
+                    sio.fifo.write_blocking(msg.to_u32());
                 }
-                i2c::dials::Channel::A2 => {
+                knobz::Channel::A2 => {
                     let msg = IntercoreMessage::SustainControl {
-                        sustain_level: dial_change.value as u16 >> 3,
+                        sustain_level: dial_change.value,
                     };
-                    sio.fifo.write(msg.to_u32());
+                    sio.fifo.write_blocking(msg.to_u32());
                 }
-                i2c::dials::Channel::A3 => {
+                knobz::Channel::A3 => {
                     let msg = IntercoreMessage::ReleaseControl {
-                        release_ms: dial_change.value as u16 >> 5,
+                        release_ms: dial_change.value,
                     };
-                    sio.fifo.write(msg.to_u32());
+                    sio.fifo.write_blocking(msg.to_u32());
                 }
             }
             Some(())
         });
+
+        portamento_dials
+            .update(elapsed_time_us)
+            .and_then(|dial_change| {
+                match dial_change.channel {
+                    knobz::Channel::A2 => {
+                        info!("WaveformControl: waveform: {:?}", dial_change.value);
+                        let msg = IntercoreMessage::WaveformControl {
+                            waveform: intercore::Waveform::from_u8(dial_change.value as u8)
+                                .unwrap(),
+                        };
+                        sio.fifo.write_blocking(msg.to_u32());
+                    }
+                    knobz::Channel::A3 => {
+                        let msg = IntercoreMessage::PortamentoControl {
+                            portamento_time_ms: dial_change.value as u16,
+                        };
+                        sio.fifo.write_blocking(msg.to_u32());
+                    }
+                    _ => {}
+                }
+                Some(())
+            });
 
         if !usb_dev.poll(&mut [&mut midi]) {
             continue;
@@ -297,12 +329,12 @@ fn main() -> ! {
                             let velocity = u8::from(velocity);
                             let note: u8 = note.into();
                             let msg = IntercoreMessage::NoteOn { note, velocity };
-                            sio.fifo.write(msg.to_u32());
+                            sio.fifo.write_blocking(msg.to_u32());
                         }
                         Message::NoteOff(Channel1, note, ..) => {
                             let note: u8 = note.into();
                             let msg = IntercoreMessage::NoteOff { note };
-                            sio.fifo.write(msg.to_u32());
+                            sio.fifo.write_blocking(msg.to_u32());
                         }
                         _ => {}
                     }

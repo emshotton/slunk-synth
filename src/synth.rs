@@ -1,5 +1,7 @@
 use crate::adsr::Adsr;
-use crate::wavetables::{WavetablePlayer, SINE_WAVETABLE, WAVETABLE_SIZE};
+use crate::wavetables::{
+    WavetablePlayer, SAWTOOTH_WAVETABLE, SINE_WAVETABLE, SQUARE_WAVETABLE, WAVETABLE_SIZE,
+};
 
 pub trait Synth {
     fn new() -> Self;
@@ -21,7 +23,7 @@ struct MonoSynth {
 
 impl Synth for MonoSynth {
     fn new() -> Self {
-        let wavetable_player = WavetablePlayer::new(&SINE_WAVETABLE, 69);
+        let wavetable_player = WavetablePlayer::new(&SAWTOOTH_WAVETABLE, 69);
         let adsr = Adsr::new();
         Self {
             oscilator: wavetable_player,

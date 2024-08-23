@@ -7,6 +7,12 @@ pub enum Waveform {
     Triangle,
 }
 
+impl Default for Waveform {
+    fn default() -> Self {
+        Self::Sine
+    }
+}
+
 impl Format for Waveform {
     fn format(&self, f: defmt::Formatter) {
         match self {
@@ -22,18 +28,18 @@ impl Waveform {
     pub fn to_u8(&self) -> u8 {
         match self {
             Self::Sine => 0,
-            Self::Sawtooth => 1,
-            Self::Square => 2,
-            Self::Triangle => 3,
+            Self::Sawtooth => 64,
+            Self::Square => 128,
+            Self::Triangle => 192,
         }
     }
 
     pub fn from_u8(byte: u8) -> Option<Self> {
         match byte {
-            0 => Some(Self::Sine),
-            1 => Some(Self::Sawtooth),
-            2 => Some(Self::Square),
-            3 => Some(Self::Triangle),
+            0..64 => Some(Self::Sine),
+            64..128 => Some(Self::Sawtooth),
+            128..192 => Some(Self::Square),
+            192..=u8::MAX => Some(Self::Triangle),
             _ => None,
         }
     }
