@@ -14,6 +14,7 @@ pub trait Synth {
     fn release_control(&mut self, release_ms: u16);
     fn set_wavetable(&mut self, wavetable: &'static [u8; WAVETABLE_SIZE]);
     fn portamento_control(&mut self, portamento_time_ms: u16);
+    fn channel_aftertouch(&mut self, aftertouch: u8);
 }
 
 struct MonoSynth {
@@ -70,6 +71,10 @@ impl Synth for MonoSynth {
 
     fn portamento_control(&mut self, portamento_time_ms: u16) {
         self.oscilator.set_portamento(portamento_time_ms as u32);
+    }
+
+    fn channel_aftertouch(&mut self, aftertouch: u8) {
+        self.adsr.set_aftertouch(aftertouch as u32 + 127);
     }
 }
 
@@ -155,6 +160,12 @@ impl Synth for PolySynth {
     fn portamento_control(&mut self, portamento_time_ms: u16) {
         for voice in self.voices.iter_mut() {
             voice.oscilator.set_portamento(portamento_time_ms as u32);
+        }
+    }
+
+    fn channel_aftertouch(&mut self, aftertouch: u8) {
+        for voice in self.voices.iter_mut() {
+            voice.adsr.set_aftertouch(aftertouch as u32);
         }
     }
 }

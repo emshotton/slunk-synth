@@ -1,3 +1,4 @@
+use defmt::info;
 pub const MAX_LEVEL: u32 = 4095;
 const DEFAULT_ATTACK_MS: u32 = 100;
 const DEFAULT_DECAY_MS: u32 = 50;
@@ -8,6 +9,7 @@ pub struct Adsr {
     attack_ms: u32,
     decay_ms: u32,
     sustain_level: u32,
+    aftertouch: u32,
     release_ms: u32,
     state: AdsrState,
     time_us: u32,
@@ -31,6 +33,7 @@ impl Adsr {
             decay_ms: DEFAULT_DECAY_MS,
             sustain_level: MAX_LEVEL / 3,
             release_ms: DEFAULT_RELEASE_MS,
+            aftertouch: 0,
             state: AdsrState::Done,
             time_us: 0,
             triggered: false,
@@ -48,6 +51,10 @@ impl Adsr {
 
     pub fn set_sustain(&mut self, sustain_level: u32) {
         self.sustain_level = sustain_level;
+    }
+
+    pub fn set_aftertouch(&mut self, aftertouch: u32) {
+        self.aftertouch = aftertouch;
     }
 
     pub fn set_release(&mut self, release_ms: u32) {
@@ -104,7 +111,12 @@ impl Adsr {
                     self.state = AdsrState::Release;
                     self.time_us = 0;
                 }
-                return ((self.sustain_level * self.velocity) / 127) as u16;
+
+                let sustain = u16::min(
+                    (((self.sustain_level * self.velocity) / 127) + self.aftertouch) as u16,
+                    MAX_LEVEL as u16,
+                );
+                return sustain;
             }
             AdsrState::Release => {
                 if time_ms > self.release_ms {

@@ -54,6 +54,7 @@ pub enum IntercoreMessage {
     ReleaseControl { release_ms: u16 },
     WaveformControl { waveform: Waveform },
     PortamentoControl { portamento_time_ms: u16 },
+    ChannelAftertouch { aftertouch: u8 },
 }
 
 impl IntercoreMessage {
@@ -82,6 +83,9 @@ impl IntercoreMessage {
             }),
             0x06 => Some(Self::PortamentoControl {
                 portamento_time_ms: u16::from_ne_bytes([bytes[1], bytes[2]]),
+            }),
+            0x0A => Some(Self::ChannelAftertouch {
+                aftertouch: bytes[1],
             }),
             _ => None,
         }
@@ -166,6 +170,14 @@ impl IntercoreMessage {
                 bytes[1] = portamento_bytes[0];
                 bytes[2] = portamento_bytes[1];
                 // Padding
+                bytes[3] = 0x00;
+                u32::from_ne_bytes(bytes)
+            }
+            Self::ChannelAftertouch { aftertouch } => {
+                let mut bytes = [0u8; 4];
+                bytes[0] = 0x0A;
+                bytes[1] = *aftertouch;
+                bytes[2] = 0x00;
                 bytes[3] = 0x00;
                 u32::from_ne_bytes(bytes)
             }

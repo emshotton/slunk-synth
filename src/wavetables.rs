@@ -65,7 +65,7 @@ impl WavetablePlayer {
             sample_interval_ns,
             note_counter_ns: 0,
             wavetable_index: 0,
-            portamento_time_ms: 150,
+            portamento_time_ms: 0,
             portamento_target_sample_interval_ns: sample_interval_ns,
             portamento_prev_sample_interval_ns: sample_interval_ns,
             protamento_counter_ns: 0,
@@ -95,11 +95,10 @@ impl WavetablePlayer {
 
     pub fn next_sample(&mut self, elapsed_time_us: u32) -> u8 {
         if !(self.sample_interval_ns == self.portamento_target_sample_interval_ns) {
-            self.protamento_counter_ns += elapsed_time_us * 1_000;
+            self.protamento_counter_ns += elapsed_time_us;
 
-            let progress_scaled_1000 = (self.protamento_counter_ns
-                / (u32::max(self.portamento_time_ms * 1_000, 1)))
-                as i32;
+            let progress_scaled_1000 =
+                (self.protamento_counter_ns / (u32::max(self.portamento_time_ms, 1))) as i32;
 
             let diff: i32 = self.portamento_target_sample_interval_ns as i32
                 - self.portamento_prev_sample_interval_ns as i32;

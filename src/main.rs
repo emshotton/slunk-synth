@@ -146,6 +146,10 @@ fn core1_task(loop_timer: &bsp::hal::timer::Timer) -> ! {
                     );
                     poly_synth.portamento_control(portamento_time_ms);
                 }
+                Some(IntercoreMessage::ChannelAftertouch { aftertouch }) => {
+                    info!("ChannelAftertouch: aftertouch: {}", aftertouch);
+                    poly_synth.channel_aftertouch(aftertouch);
+                }
                 None => {
                     info!("Unknown message: {}", word);
                 }
@@ -334,6 +338,11 @@ fn main() -> ! {
                         Message::NoteOff(Channel1, note, ..) => {
                             let note: u8 = note.into();
                             let msg = IntercoreMessage::NoteOff { note };
+                            sio.fifo.write_blocking(msg.to_u32());
+                        }
+                        Message::ChannelAftertouch(Channel1, aftertouch) => {
+                            let aftertouch = u8::from(aftertouch);
+                            let msg = IntercoreMessage::ChannelAftertouch { aftertouch };
                             sio.fifo.write_blocking(msg.to_u32());
                         }
                         _ => {}
