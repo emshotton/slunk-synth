@@ -1,6 +1,6 @@
 [package]
 edition = "2021"
-name = "gong-amp-firmware"
+name = "slunk-synth"
 version = "0.1.0"
 license = "MIT OR Apache-2.0"
 
@@ -18,7 +18,7 @@ rp-pico = "0.9"
 usb-device = "0.3.2"
 usbd-midi = "0.3.0"
 ads1x1x = { git = "https://github.com/eldruin/ads1x1x-rs.git", hash = "2563090" }
-knobz = { path = "../../knobz/knobz-rs" }
+knobz = { git = "https://github.com/emshotton/knobz-rs.git" }
 nb = "1.1.0"
 
 # but you can use any BSP. Uncomment this to use the pro_micro_rp2040 BSP instead
